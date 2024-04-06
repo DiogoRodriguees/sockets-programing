@@ -7,6 +7,5 @@ public class User {
     User(String user, String password) {
         this.user = user;
         this.password = password;
-
     }
 }
