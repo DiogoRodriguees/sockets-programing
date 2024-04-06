@@ -1,0 +1,13 @@
+package aula_tcp;
+
+public class Commands {
+    final public String pwd = "pwd";
+    final public String chdir = "chdir";
+    final public String getFiles = "getfiles";
+    final public String getDirs = "getdirs";
+    final public String touch = "touch";
+    final public String mkdir = "mkdir";
+    final public String exit = "exit";
+    final public String success = "success";
+    final public String connect = "connect";
+}
