@@ -25,9 +25,7 @@ public class TCPServer {
                 Socket clientSocket = listenSocket.accept();
                 System.out.println("Cliente conectado ... Criando thread ...");
 
-                Directory dirOrigin = new Directory(null, "/home/user");
-
-                Listenner thread = new Listenner(clientSocket, dirOrigin, users);
+                Listenner thread = new Listenner(clientSocket, users);
                 thread.start();
             }
 

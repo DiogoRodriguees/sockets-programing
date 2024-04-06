@@ -16,16 +16,13 @@ class Listenner extends Thread {
     Commands commands;
     User[] users;
 
-    public Listenner(Socket clientSocket, Directory origin, User[] users) throws IOException {
+    public Listenner(Socket clientSocket, User[] users) throws IOException {
         // client socket
         this.clientSocket = clientSocket;
 
         // defines input and output default
         this.in = new DataInputStream(clientSocket.getInputStream());
         this.out = new DataOutputStream(clientSocket.getOutputStream());
-
-        // create directory to user
-        this.directory = origin;
 
         this.commands = new Commands();
 
@@ -66,6 +63,7 @@ class Listenner extends Thread {
                     if (cmdParams[2].equals(user.password)) {
                         System.out.println("Passwords match.");
                         System.out.println("User connected ...");
+                        this.directory = new Directory(null, "/home/" + user.user);
                         break;
                     } else {
                         buffer = "Credenciais invalidas";
@@ -79,7 +77,7 @@ class Listenner extends Thread {
                 }
             }
 
-            buffer = this.commands.success;
+            buffer = this.commands.success + " " + this.directory.pwd();
             out.writeUTF(buffer);
 
             while (true) {
@@ -113,7 +111,7 @@ class Listenner extends Thread {
 
                     // return
                     String response = this.directory.pwd();
-                    out.writeUTF(response);
+                    out.writeUTF(this.commands.chdir + " " + response);
                     System.out.println("Complete change directory");
 
                     System.out.println("<--- CHDIR executed ...");

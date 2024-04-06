@@ -18,6 +18,7 @@ public class TCPClient {
         Socket clientSocket = null; // socket do cliente
         Scanner reader = new Scanner(System.in); // ler mensagens via teclado
         Commands commands = new Commands();
+        String localpath = "$";
         try {
             /// Endereço e porta do servidor
             int serverPort = 6666;
@@ -34,7 +35,7 @@ public class TCPClient {
 
             // starting listenner keyboard
             while (true) {
-                System.out.print("$ ");
+                System.out.print(localpath + " ");
                 buffer = reader.nextLine(); // read keyboard
 
                 String[] cmdParams = buffer.split(" ");
@@ -61,13 +62,16 @@ public class TCPClient {
                 out.writeUTF(cmd); // send message to server
 
                 buffer = in.readUTF(); // await confirm
-                if (buffer.equals(commands.success))
+                if (buffer.contains(commands.success)) {
+                    String[] response = buffer.split(" ");
+                    localpath = response[1];
                     break;
+                }
                 System.out.println(buffer);
             }
 
             while (true) {
-                System.out.print("user@home: ~$ ");
+                System.out.print(localpath + " $ ");
                 buffer = reader.nextLine(); // read keyboard
 
                 out.writeUTF(buffer); // send message to server
@@ -76,6 +80,11 @@ public class TCPClient {
                     break;
 
                 buffer = in.readUTF(); // await confirm
+                if (buffer.contains(commands.chdir)) {
+                    String newPath = buffer.split(" ")[1];
+                    localpath = newPath;
+                    continue;
+                }
                 System.out.println(buffer);
             }
         } catch (UnknownHostException ue) {

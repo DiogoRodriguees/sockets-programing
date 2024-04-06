@@ -11,7 +11,11 @@ public class Directory {
     Integer amountDirectories;
 
     Directory(Directory parent, String name) {
-        this.name = name;
+        if (parent != null) {
+            this.name = parent.name + "/" + name;
+        } else {
+            this.name = name;
+        }
         this.parentDirectory = parent;
 
         this.files = new Files[10];
@@ -28,8 +32,17 @@ public class Directory {
         if (name == null)
             return null;
 
+        String[] splited = name.split("/");
+        System.out.println(splited[splited.length - 1]);
+
+        if (splited[splited.length - 1].equals("..")) {
+            System.out.println("BAck directory");
+            return this.parentDirectory;
+        }
+
         for (int i = 0; i < this.amountDirectories; i++) {
-            if (directories[i].name.equals(name)) {
+            String[] nameS = directories[i].name.split("/");
+            if (nameS[nameS.length - 1].equals(splited[splited.length - 1])) {
                 return this.directories[i];
             }
         }
@@ -46,7 +59,8 @@ public class Directory {
             Directory d = this.directories[current++];
 
             while (d != null) {
-                response += d.name + "\n";
+                String[] dName = d.name.split("/");
+                response += dName[dName.length - 1] + "\n";
                 d = directories[current++];
             }
 
