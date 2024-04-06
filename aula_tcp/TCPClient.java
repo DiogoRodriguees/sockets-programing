@@ -22,7 +22,6 @@ public class TCPClient {
 
             // creating socket tcp
             clientSocket = new Socket(serverAddr, serverPort);
-            System.out.flush();
             // defineing input and output
             DataInputStream in = new DataInputStream(clientSocket.getInputStream());
             DataOutputStream out = new DataOutputStream(clientSocket.getOutputStream());
@@ -41,8 +40,7 @@ public class TCPClient {
                     break;
 
                 buffer = in.readUTF(); // await confirm
-                if (!buffer.equals(":OK"))
-                    System.out.println(buffer);
+                System.out.println(buffer);
             }
         } catch (UnknownHostException ue) {
             System.out.println("Socket:" + ue.getMessage());

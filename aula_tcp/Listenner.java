@@ -49,85 +49,89 @@ class Listenner extends Thread {
 
             while (true) {
                 buffer = in.readUTF();
+                String[] command = buffer.split(" ");
 
-                if (buffer.equals("pwd")) {
+                if (command[0].equals("pwd")) {
+                    System.out.println("---> Executing PWD command ...");
+
                     String response = this.directory.pwd();
                     out.writeUTF(response);
+
+                    System.out.println("<--- PWD executed ...");
+                    continue;
                 }
 
-                if (buffer.equals("chdir")) {
-                    Directory nextDirectory = this.directory.chdir("chdirTeste");
+                if (command[0].equals("chdir")) {
+                    System.out.println("---> Executing CHDIR command ...");
 
-                    if (nextDirectory == null)
+                    // get directory
+                    Directory nextDirectory = this.directory.chdir(command[1]);
+
+                    // check if directory exist
+                    if (nextDirectory == null) {
                         out.writeUTF("This directory name not exist ....");
+                        continue;
+                    }
 
+                    // update current directory
                     this.directory = nextDirectory;
 
-                    out.writeUTF(":OK");
+                    // return
+                    String response = this.directory.pwd();
+                    out.writeUTF(response);
                     System.out.println("Complete change directory");
+
+                    System.out.println("<--- CHDIR executed ...");
+                    continue;
                 }
 
-                if (buffer.equals("files")) {
-                    System.out.println("---> Trying get files");
+                if (command[0].equals("getfiles")) {
+                    System.out.println("---> Executing GETFILES command ...");
 
-                    Files[] files = this.directory.files;
+                    String fileNames = this.directory.getFileNames();
 
-                    if (files != null) {
-                        String response = "";
-                        Integer current = 0;
-                        Files file = files[current++];
-
-                        while (file != null) {
-                            response += file.name + "." + file.ext + "\n";
-                            file = files[current++];
-                        }
-
-                        out.writeUTF(response);
-                    }
-                    System.out.println("<--- Get files complete");
+                    out.writeUTF(fileNames);
+                    System.out.println("<--- GETFILES executed ...");
+                    continue;
                 }
-                if (buffer.equals("dirs")) {
+
+                if (command[0].equals("getdirs")) {
                     System.out.println("---> Trying get dirs");
 
-                    Directory[] directories = this.directory.getDirs();
+                    String response = this.directory.getDirs();
 
-                    if (directories != null) {
-
-                        String response = "\n";
-                        Integer current = 0;
-                        Directory directory = directories[current++];
-
-                        while (directory != null) {
-                            response = directory.name + "\n";
-                            directory = directories[current++];
-                        }
-
-                        out.writeUTF(response);
-                    }
-
+                    out.writeUTF(response);
                     System.out.println("<--- Get directories complete");
+                    continue;
                 }
 
-                if (buffer.contains("mkdir")) {
+                if (command[0].equals("mkdir")) {
                     System.out.println("---> Trying create directory");
 
-                    Integer free = this.directory.amountDirectories;
-                    this.directory.directories[free] = new Directory(this.directory, "TesteDirectory");
-                    this.directory.amountDirectories++;
-                    out.writeUTF(":OK");
+                    if (command.length == 1) {
+                        out.writeUTF("MKDIR command need a name");
+                        continue;
+                    }
 
+                    String response = this.directory.mkdir(command[1]);
+                    out.writeUTF(response);
                     System.out.println("<--- Create direcotory complete");
+                    continue;
                 }
 
-                if (buffer.equals("touch")) {
+                if (command[0].equals("touch")) {
                     System.out.println("---> Create file request");
 
-                    Integer free = this.directory.amountFiles;
-                    this.directory.files[free] = new Files("TesteFiles", "txt");
-                    this.directory.amountFiles++;
-                    out.writeUTF(":OK");
+                    if (command.length == 1) {
+                        out.writeUTF("TOUCH command need a file name");
+                        continue;
+                    }
 
+                    String response = this.directory.touch(command[1]);
+
+                    out.writeUTF(response);
                     System.out.println("<--- Create file complete\n");
+                    continue;
                 }
 
                 if (buffer.equals("exit")) {
@@ -135,10 +139,13 @@ class Listenner extends Thread {
                     out.writeUTF("exit");
                     break;
                 }
-                buffer = ":OK";
+                System.out.println("Read again ...");
+                buffer = "Command not found";
                 out.writeUTF(buffer);
             }
-        } catch (EOFException eofe) {
+        } catch (
+
+        EOFException eofe) {
             System.out.println("EOF: " + eofe.getMessage());
         } catch (IOException ioe) {
             System.out.println("IOE: " + ioe.getMessage());
