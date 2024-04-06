@@ -36,7 +36,13 @@ public class TCPClient {
             while (true) {
                 System.out.print("$ ");
                 buffer = reader.nextLine(); // read keyboard
+
                 String[] cmdParams = buffer.split(" ");
+                if (cmdParams.length != 3) {
+                    System.out.println("Parametros invalidos");
+                    continue;
+                }
+
                 String user = cmdParams[1]; // use diogo
                 String password = cmdParams[2];// use senha
 

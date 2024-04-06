@@ -5,9 +5,6 @@ import java.io.DataOutputStream;
 import java.io.EOFException;
 import java.io.IOException;
 import java.net.Socket;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.Base64;
 
 class Listenner extends Thread {
 
@@ -17,8 +14,9 @@ class Listenner extends Thread {
     Directory directory;
 
     Commands commands;
+    User[] users;
 
-    public Listenner(Socket clientSocket, Directory origin) throws IOException {
+    public Listenner(Socket clientSocket, Directory origin, User[] users) throws IOException {
         // client socket
         this.clientSocket = clientSocket;
 
@@ -30,42 +28,42 @@ class Listenner extends Thread {
         this.directory = origin;
 
         this.commands = new Commands();
-    }
 
-    private static String hashPassword(String password) {
-        try {
-            // Create MessageDigest instance for SHA-512
-            MessageDigest md = MessageDigest.getInstance("SHA-512");
-
-            // Add password bytes to digest
-            md.update(password.getBytes());
-
-            // Get the hash's bytes
-            byte[] bytes = md.digest();
-
-            // Convert bytes to base64 to get a printable representation
-            return Base64.getEncoder().encodeToString(bytes);
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-            return null;
-        }
+        this.users = users;
     }
 
     @Override
     public void run() {
         try {
             String buffer = "";
-            String user = "diogo";
-            String senha = "TpOUtNKHa4dBsQovtGWJtg8aHBIem8TCgProWvdbda6GCdSfDkIV87aCMG3H8mKxcf/BgfiG92TWOCENb/e6KA==";
 
             while (true) {
                 buffer = in.readUTF();
                 String[] cmdParams = buffer.split(" ");
 
+                if (cmdParams.length != 3) {
+                    buffer = "Parametros invalidos";
+                    out.writeUTF(buffer);
+                    continue;
+                }
+
                 if (cmdParams[0].equals(this.commands.connect)) {
                     // System.out.println(senha);
+                    User user = null;
+                    for (int i = 0; i < 2; i++) {
+                        if (this.users[i].user.equals(cmdParams[1])) {
+                            user = this.users[i];
+                            break;
+                        }
+                    }
+                    if (user == null) {
+                        buffer = "User not found";
+                        out.writeUTF(buffer);
+                        continue;
+                    }
+
                     // System.out.println(hashedInputPassword);
-                    if (cmdParams[2].equals(senha)) {
+                    if (cmdParams[2].equals(user.password)) {
                         System.out.println("Passwords match.");
                         System.out.println("User connected ...");
                         break;
@@ -73,9 +71,10 @@ class Listenner extends Thread {
                         buffer = "Credenciais invalidas";
                         out.writeUTF(buffer);
                         System.out.println("Passwords do not match.");
+                        continue;
                     }
                 } else {
-                    buffer = "Voce nao esta conectado";
+                    buffer = "Comando invalido. Voce nao esta conectado";
                     out.writeUTF(buffer);
                 }
             }
