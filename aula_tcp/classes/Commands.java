@@ -1,4 +1,4 @@
-package aula_tcp;
+package aula_tcp.classes;
 
 public class Commands {
     final public String pwd = "pwd";
@@ -10,4 +10,5 @@ public class Commands {
     final public String exit = "exit";
     final public String success = "success";
     final public String connect = "connect";
+    final public String confirm = ":OK";
 }

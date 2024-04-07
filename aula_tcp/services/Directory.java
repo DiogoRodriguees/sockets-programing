@@ -1,6 +1,8 @@
-package aula_tcp;
+package aula_tcp.services;
 
 import java.io.IOException;
+
+import aula_tcp.classes.Files;
 
 public class Directory {
     String name;
@@ -47,18 +49,18 @@ public class Directory {
         return this.createFile(name);
     }
 
-    protected void checkIfNameIsValid(String name) throws IOException {
-        if (name == null) {
-            throw new IOException("Name not be null");
-        }
-    }
-
     public Directory mkdir(String name) throws IOException {
         if (name == null) {
             throw new IOException("Mkdir need a name");
         }
 
         return this.createDir(name);
+    }
+
+    protected void checkIfNameIsValid(String name) throws IOException {
+        if (name == null) {
+            throw new IOException("Name not be null");
+        }
     }
 
     protected Directory createDir(String name) {
@@ -92,7 +94,7 @@ public class Directory {
         Files file = this.files[current++];
 
         while (file != null) {
-            response += file.getName();
+            response += file.getName() + "\n";
             file = this.files[current++];
         }
 
@@ -105,13 +107,17 @@ public class Directory {
             return this.parentDirectory;
         }
 
-        for (int i = 0; i < this.amountDirectories; i++) {
-            String dirName = extractDirName(this.directories[i].name);
+        int current = 0;
+        Directory d = this.directories[current++];
+
+        while (d != null) {
+            String dirName = extractDirName(d.name);
 
             if (dirName.equals(currentDirName)) {
-                return this.directories[i];
+                return this.directories[current++];
             }
         }
+
         return null;
     }
 

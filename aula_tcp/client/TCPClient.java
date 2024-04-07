@@ -1,4 +1,4 @@
-package aula_tcp;
+package aula_tcp.client;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -12,13 +12,16 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 import java.util.Scanner;
 
-public class TCPClient {
-    public static void main(String args[]) {
+import aula_tcp.classes.Commands;
 
-        Socket clientSocket = null; // socket do cliente
+public class TCPClient {
+
+    public static void main(String args[]) {
         Scanner reader = new Scanner(System.in); // ler mensagens via teclado
+        Socket clientSocket = null; // socket do cliente
         Commands commands = new Commands();
         String localpath = "$";
+
         try {
             /// Endereço e porta do servidor
             int serverPort = 6666;
@@ -26,20 +29,21 @@ public class TCPClient {
 
             // creating socket tcp
             clientSocket = new Socket(serverAddr, serverPort);
+
             // defineing input and output
             DataInputStream in = new DataInputStream(clientSocket.getInputStream());
             DataOutputStream out = new DataOutputStream(clientSocket.getOutputStream());
 
             // use buuffer to store message
             String buffer = "";
+            boolean userNoConnected = true;
 
-            // starting listenner keyboard
-            while (true) {
+            while (userNoConnected) {
                 System.out.print(localpath + " ");
                 buffer = reader.nextLine(); // read keyboard
 
                 String[] cmdParams = buffer.split(" ");
-                if (cmdParams.length != 3) {
+                if (checkAmountParams(cmdParams)) {
                     System.out.println("Parametros invalidos");
                     continue;
                 }
@@ -47,13 +51,8 @@ public class TCPClient {
                 String user = cmdParams[1]; // use diogo
                 String password = cmdParams[2];// use senha
 
-                // Create MessageDigest instance for SHA-512
                 MessageDigest md = MessageDigest.getInstance("SHA-512");
-
-                // Add password bytes to digest
                 md.update(password.getBytes());
-
-                // Get the hash's bytes
                 byte[] bytes = md.digest();
 
                 // Convert bytes to base64 to get a printable representation
@@ -65,27 +64,34 @@ public class TCPClient {
                 if (buffer.contains(commands.success)) {
                     String[] response = buffer.split(" ");
                     localpath = response[1];
-                    break;
+                    userNoConnected = false;
                 }
                 System.out.println(buffer);
             }
 
+            // while no receive exit command
             while (true) {
                 System.out.print(localpath + " $ ");
-                buffer = reader.nextLine(); // read keyboard
+                buffer = reader.nextLine();
 
-                out.writeUTF(buffer); // send message to server
-
-                if (buffer.equals("exit"))
+                if (buffer.equals(commands.exit))
                     break;
 
+                // send message and await response
+                out.writeUTF(buffer);
                 buffer = in.readUTF(); // await confirm
+
+                // if receive chdir command -> update localpath
                 if (buffer.contains(commands.chdir)) {
                     String newPath = buffer.split(" ")[1];
                     localpath = newPath;
                     continue;
                 }
-                System.out.println(buffer);
+
+                // show when no confirm message
+                if (!buffer.contains(commands.confirm)) {
+                    System.out.println(buffer);
+                }
             }
         } catch (UnknownHostException ue) {
             System.out.println("Socket:" + ue.getMessage());
@@ -98,10 +104,15 @@ public class TCPClient {
         } finally {
             try {
                 clientSocket.close();
+                reader.close();
             } catch (IOException ioe) {
                 System.out.println("IO: " + ioe);
-                reader.close();
             }
         }
-    } // main
-} // class
+    }
+
+    static boolean checkAmountParams(String[] cmdParams) {
+        return cmdParams.length != 3;
+    }
+
+}

@@ -1,16 +1,16 @@
-package aula_tcp;
+package aula_tcp.classes;
 
 public class Files {
     public String name;
     public String ext;
 
-    Files(String name) {
-        String[] nameSplited = this.createFile(name);
+    public Files(String name) {
+        String[] nameSplited = this.splitName(name);
         this.name = nameSplited[0];
         this.ext = nameSplited[1];
     }
 
-    protected String[] createFile(String name) {
+    protected String[] splitName(String name) {
         return name.split("\\.");
     }
 

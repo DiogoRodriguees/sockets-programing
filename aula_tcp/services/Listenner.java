@@ -1,4 +1,4 @@
-package aula_tcp;
+package aula_tcp.services;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -6,15 +6,20 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.net.Socket;
 
-class Listenner extends Thread {
+import aula_tcp.classes.Commands;
+import aula_tcp.classes.Files;
+import aula_tcp.classes.User;
+
+public class Listenner extends Thread {
 
     Socket clientSocket;
     DataInputStream in;
     DataOutputStream out;
     Directory directory;
 
-    Commands commands;
+    aula_tcp.classes.Commands commands;
     User[] users;
+    boolean noExit = false;
 
     public Listenner(Socket clientSocket, User[] users) throws IOException {
         this.users = users;
@@ -27,6 +32,7 @@ class Listenner extends Thread {
 
     @Override
     public void run() {
+
         try {
             // await user sign in
             this.awaitConnection();
@@ -51,82 +57,74 @@ class Listenner extends Thread {
             }
         }
         System.out.println("Thread comunicação cliente finalizada.");
-    } // run
+    }
 
-    protected void listenCommands() {
+    protected void listenCommands() throws IOException {
         String buffer = "";
+        boolean noExit = true;
 
-        while (true) {
-            try {
-                buffer = in.readUTF();
-                String[] cmdParams = buffer.split(" ");
-                this.executeCommands(buffer, cmdParams);
-            } catch (IOException ioe) {
-                System.out.println("IOE: " + ioe.getMessage());
-            }
+        while (noExit) {
+            buffer = in.readUTF();
+            String[] cmdParams = buffer.split(" ");
+            noExit = this.executeCommands(buffer, cmdParams);
         }
     }
 
-    protected void executeCommands(String buffer, String[] cmdParams) throws IOException {
+    protected boolean executeCommands(String buffer, String[] cmdParams) throws IOException {
 
         if (cmdParams[0].equals(this.commands.pwd)) {
             System.out.println("---> Executing PWD command ...");
-
-            String response = this.directory.pwd();
-            out.writeUTF(response);
-
+            this.executePwd();
             System.out.println("<--- PWD executed ...");
-            return;
+            return noExit;
         }
 
         if (cmdParams[0].equals(this.commands.chdir)) {
             System.out.println("---> Executing CHDIR command ...");
             this.executedChdir(cmdParams[1]);
             System.out.println("<--- CHDIR executed ...");
-            return;
+            return noExit;
         }
 
         if (cmdParams[0].equals(this.commands.getFiles)) {
             System.out.println("---> Executing GETFILES command ...");
-
-            String fileNames = this.directory.getFiles();
-
-            out.writeUTF(fileNames);
+            this.executeGetFiles();
             System.out.println("<--- GETFILES executed ...");
-            return;
+            return noExit;
         }
 
         if (cmdParams[0].equals(this.commands.getDirs)) {
-            System.out.println("---> Trying get dirs");
-
+            System.out.println("---> Executing GETDIRS command ...");
             String response = this.directory.getDirs();
-
-            out.writeUTF(response);
-            System.out.println("<--- Get directories complete");
-            return;
+            out.writeUTF(response == null ? ":OK" : response);
+            System.out.println("<--- GETDIRS executed ...");
+            return noExit;
         }
 
         if (cmdParams[0].equals(this.commands.mkdir)) {
-            System.out.println("---> Trying create directory");
+            System.out.println("---> Executing MKDIR command ...");
             this.executeMkdir(cmdParams[1]);
-            System.out.println("<--- Create direcotory complete");
-            return;
+            System.out.println("<--- MKDIR executed ...");
+            return noExit;
         }
 
         if (cmdParams[0].equals(this.commands.touch)) {
-            System.out.println("---> Create file request");
-            this.directory.touch(cmdParams[1]);
-            System.out.println("<--- Create file complete\n");
-            return;
+            System.out.println("---> Executing TOUCH command ...");
+            this.executeTouch(buffer);
+            System.out.println("<--- TOUCH executed ...");
+            return noExit;
         }
 
         if (buffer.equals(this.commands.exit)) {
+            System.out.println("---> Executing EXIT command ...");
             System.out.println("User wish close connection");
-            out.writeUTF("exit");
-            return;
+            out.writeUTF(this.commands.exit);
+            System.out.println("<--- EXIT executed ...");
+            return true;
         }
 
         out.writeUTF("Command not found");
+        return false;
     }
 
     protected void awaitConnection() throws IOException {
@@ -165,19 +163,20 @@ class Listenner extends Thread {
     }
 
     protected User getUserByName(String name) {
+
         for (int i = 0; i < 2; i++) {
             if (this.users[i].user.equals(name)) {
                 return this.users[i];
             }
         }
+
         return null;
     }
 
     protected void executedChdir(String dirName) throws IOException {
-        // get directory
         Directory currentDir = this.directory.chdir(dirName);
 
-        // check if directory exist
+        // check if directory was found
         if (currentDir == null) {
             out.writeUTF("This directory name not exist ....");
             throw new IOException("This directory not exist");
@@ -186,7 +185,7 @@ class Listenner extends Thread {
         // update current directory
         this.directory = currentDir;
 
-        // return
+        // return path to directory received
         String response = this.directory.pwd();
         out.writeUTF(this.commands.chdir + " " + response);
     }
@@ -204,4 +203,13 @@ class Listenner extends Thread {
         out.writeUTF("Diretorio " + dir.name + " created");
     }
 
+    protected void executePwd() throws IOException {
+        String response = this.directory.pwd();
+        out.writeUTF(response);
+    }
+
+    protected void executeGetFiles() throws IOException {
+        String fileNames = this.directory.getFiles();
+        out.writeUTF(fileNames == null ? ":OK" : fileNames);
+    }
 } // class

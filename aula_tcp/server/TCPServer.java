@@ -1,14 +1,17 @@
-package aula_tcp;
+package aula_tcp.server;
 
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 
+import aula_tcp.classes.User;
+import aula_tcp.services.Listenner;
+
 public class TCPServer {
 
     public static void main(String args[]) {
-        try {
 
+        try {
             int serverPort = 6666; // porta do servidor
             ServerSocket listenSocket = new ServerSocket(serverPort);
 
@@ -31,6 +34,7 @@ public class TCPServer {
 
         } catch (IOException e) {
             System.out.println("Listen socket:" + e.getMessage());
+        } finally {
         }
     }
 }
