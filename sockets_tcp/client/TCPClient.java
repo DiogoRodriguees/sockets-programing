@@ -1,4 +1,4 @@
-package aula_tcp.client;
+package sockets_tcp.client;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -12,7 +12,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 import java.util.Scanner;
 
-import aula_tcp.classes.Commands;
+import sockets_tcp.classes.Commands;
 
 public class TCPClient {
 
@@ -54,9 +54,9 @@ public class TCPClient {
                 MessageDigest md = MessageDigest.getInstance("SHA-512");
                 md.update(password.getBytes());
                 byte[] bytes = md.digest();
+                String hashedPassword = Base64.getEncoder().encodeToString(bytes);
 
                 // Convert bytes to base64 to get a printable representation
-                String hashedPassword = Base64.getEncoder().encodeToString(bytes);
                 String cmd = cmdParams[0] + " " + user + " " + hashedPassword;
                 out.writeUTF(cmd); // send message to server
 

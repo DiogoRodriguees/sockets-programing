@@ -1,4 +1,4 @@
-javac aula_tcp/classes/*.java
-javac aula_tcp/server/*.java
-javac aula_tcp/client/*.java
-javac aula_tcp/services/*.java
+javac sockets_tcp/classes/*.java
+javac sockets_tcp/server/*.java
+javac sockets_tcp/client/*.java
+javac sockets_tcp/services/*.java

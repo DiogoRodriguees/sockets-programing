@@ -1,4 +1,4 @@
-package aula_tcp.classes;
+package sockets_tcp.classes;
 
 public class User {
     public String user;

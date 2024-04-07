@@ -1,1 +1,1 @@
-java aula_tcp.server.TCPServer
+java sockets_tcp.server.TCPServer

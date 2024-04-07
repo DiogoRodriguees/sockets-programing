@@ -1,33 +1,35 @@
-package aula_tcp.services;
+package sockets_tcp.services;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.EOFException;
+import java.io.File;
 import java.io.IOException;
 import java.net.Socket;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
-import aula_tcp.classes.Commands;
-import aula_tcp.classes.Files;
-import aula_tcp.classes.User;
+import sockets_tcp.classes.Commands;
+import sockets_tcp.classes.User;
 
 public class Listenner extends Thread {
 
     Socket clientSocket;
     DataInputStream in;
     DataOutputStream out;
-    Directory directory;
 
-    aula_tcp.classes.Commands commands;
+    Commands commands;
     User[] users;
-    boolean noExit = false;
+    volatile Path currentPath = Paths.get(System.getProperty("user.dir") + "/sockets_tcp/server/home");
+    DirectoryController dirController;
 
     public Listenner(Socket clientSocket, User[] users) throws IOException {
         this.users = users;
         this.clientSocket = clientSocket;
-
         this.in = new DataInputStream(clientSocket.getInputStream());
         this.out = new DataOutputStream(clientSocket.getOutputStream());
         this.commands = new Commands();
+        this.dirController = new DirectoryController();
     }
 
     @Override
@@ -38,7 +40,7 @@ public class Listenner extends Thread {
             this.awaitConnection();
 
             // send path user
-            out.writeUTF(this.commands.success + " " + this.directory.pwd());
+            out.writeUTF(this.commands.success + " " + this.currentPath);
 
             // listening commands pwd, getfiles, getdirs ...
             this.listenCommands();
@@ -76,43 +78,42 @@ public class Listenner extends Thread {
             System.out.println("---> Executing PWD command ...");
             this.executePwd();
             System.out.println("<--- PWD executed ...");
-            return noExit;
+            return true;
         }
 
         if (cmdParams[0].equals(this.commands.chdir)) {
             System.out.println("---> Executing CHDIR command ...");
             this.executedChdir(cmdParams[1]);
             System.out.println("<--- CHDIR executed ...");
-            return noExit;
+            return true;
         }
 
         if (cmdParams[0].equals(this.commands.getFiles)) {
             System.out.println("---> Executing GETFILES command ...");
             this.executeGetFiles();
             System.out.println("<--- GETFILES executed ...");
-            return noExit;
+            return true;
         }
 
         if (cmdParams[0].equals(this.commands.getDirs)) {
             System.out.println("---> Executing GETDIRS command ...");
-            String response = this.directory.getDirs();
-            out.writeUTF(response == null ? ":OK" : response);
+            out.writeUTF(":OK");
             System.out.println("<--- GETDIRS executed ...");
-            return noExit;
+            return true;
         }
 
         if (cmdParams[0].equals(this.commands.mkdir)) {
             System.out.println("---> Executing MKDIR command ...");
             this.executeMkdir(cmdParams[1]);
             System.out.println("<--- MKDIR executed ...");
-            return noExit;
+            return true;
         }
 
         if (cmdParams[0].equals(this.commands.touch)) {
             System.out.println("---> Executing TOUCH command ...");
-            this.executeTouch(buffer);
+            this.executeTouch(cmdParams[1]);
             System.out.println("<--- TOUCH executed ...");
-            return noExit;
+            return true;
         }
 
         if (buffer.equals(this.commands.exit)) {
@@ -120,11 +121,11 @@ public class Listenner extends Thread {
             System.out.println("User wish close connection");
             out.writeUTF(this.commands.exit);
             System.out.println("<--- EXIT executed ...");
-            return true;
+            return false;
         }
 
         out.writeUTF("Command not found");
-        return false;
+        return true;
     }
 
     protected void awaitConnection() throws IOException {
@@ -148,7 +149,20 @@ public class Listenner extends Thread {
 
                 if (passwordIsCorrect) {
                     System.out.println("User " + user.user + " connected ...");
-                    this.directory = new Directory(null, "/home/" + user.user);
+
+                    File d = new File(this.currentPath.toString(), user.user);
+
+                    if (!d.exists()) {
+                        boolean created = d.mkdirs();
+                        if (created) {
+                            System.out.println("Directory created successfully.");
+                        } else {
+                            System.out.println("Failed to create directory.");
+                        }
+                    }
+
+                    this.currentPath = this.currentPath.resolve(user.user);
+                    out.writeUTF(this.commands.success + " " + this.currentPath);
                     break;
                 }
                 out.writeUTF("Credentials incorrects");
@@ -174,42 +188,26 @@ public class Listenner extends Thread {
     }
 
     protected void executedChdir(String dirName) throws IOException {
-        Directory currentDir = this.directory.chdir(dirName);
-
-        // check if directory was found
-        if (currentDir == null) {
-            out.writeUTF("This directory name not exist ....");
-            throw new IOException("This directory not exist");
-        }
-
-        // update current directory
-        this.directory = currentDir;
-
-        // return path to directory received
-        String response = this.directory.pwd();
-        out.writeUTF(this.commands.chdir + " " + response);
+        this.currentPath = this.currentPath.resolve(dirName);
+        System.out.println(this.currentPath);
+        out.writeUTF(this.commands.chdir + " " + this.currentPath);
     }
 
     protected void executeTouch(String name) throws IOException {
-        Files file = this.directory.touch(name);
-        if (file == null) {
-            System.out.println("Failed on create file");
-        }
+        this.dirController.touch(this.currentPath.toString(), name);
         out.writeUTF(":OK");
     }
 
-    protected void executeMkdir(String name) throws IOException {
-        Directory dir = this.directory.mkdir(name);
-        out.writeUTF("Diretorio " + dir.name + " created");
+    protected void executeMkdir(String dirName) throws IOException {
+        this.dirController.mkdir(currentPath.toString(), dirName);
+        out.writeUTF(":OK");
     }
 
     protected void executePwd() throws IOException {
-        String response = this.directory.pwd();
-        out.writeUTF(response);
+        out.writeUTF(this.currentPath.toString());
     }
 
     protected void executeGetFiles() throws IOException {
-        String fileNames = this.directory.getFiles();
-        out.writeUTF(fileNames == null ? ":OK" : fileNames);
+        out.writeUTF(":OK");
     }
 } // class

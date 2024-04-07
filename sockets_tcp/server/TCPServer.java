@@ -1,11 +1,11 @@
-package aula_tcp.server;
+package sockets_tcp.server;
 
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 
-import aula_tcp.classes.User;
-import aula_tcp.services.Listenner;
+import sockets_tcp.classes.User;
+import sockets_tcp.services.Listenner;
 
 public class TCPServer {
 
