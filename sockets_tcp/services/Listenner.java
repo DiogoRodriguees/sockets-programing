@@ -19,6 +19,7 @@ public class Listenner extends Thread {
     DataOutputStream out;
 
     Commands commands;
+
     User[] users;
     volatile Path currentPath = Paths.get(System.getProperty("user.dir") + "/sockets_tcp/server/home");
     DirectoryController dirController;
