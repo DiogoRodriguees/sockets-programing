@@ -1,4 +1,4 @@
-package sockets_tcp.services;
+package sockets_tcp.threads;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -6,13 +6,14 @@ import java.io.EOFException;
 import java.io.File;
 import java.io.IOException;
 import java.net.Socket;
+import java.nio.file.FileSystems;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 
 import sockets_tcp.classes.Commands;
 import sockets_tcp.classes.User;
+import sockets_tcp.controllers.DirectoryController;
 
-public class Listenner extends Thread {
+public class ListennerThread extends Thread {
 
     Socket clientSocket;
     DataInputStream in;
@@ -21,16 +22,32 @@ public class Listenner extends Thread {
     Commands commands;
 
     User[] users;
-    volatile Path currentPath = Paths.get(System.getProperty("user.dir") + "/sockets_tcp/server/home");
+    Path home;
+    Path currentPath;
     DirectoryController dirController;
 
-    public Listenner(Socket clientSocket, User[] users) throws IOException {
+    public ListennerThread(Socket clientSocket, User[] users) throws IOException {
         this.users = users;
         this.clientSocket = clientSocket;
         this.in = new DataInputStream(clientSocket.getInputStream());
         this.out = new DataOutputStream(clientSocket.getOutputStream());
         this.commands = new Commands();
         this.dirController = new DirectoryController();
+        this.home = FileSystems.getDefault().getPath("sockets_tcp/users", "");
+
+        System.out.println("file system: " + this.home.getFileSystem());
+        System.out.println("current path: " + this.home);
+        System.out.println("path as string: " + this.home.toString());
+        System.out.println("file name: " + this.home.getFileName());
+        System.out.println("name count: " + this.home.getNameCount());
+        System.out.println("resolve: " + this.home.resolve("teste"));
+        System.out.println("to absolute path: " + this.home.toAbsolutePath());
+        System.out.println("get parent: " + this.home.getParent());
+        // System.out.println("get fileName: " +
+        // this.currentPath.fileName().toString());
+        // System.out.println("sub path: " + this.currentPath.subpath(0, 0));
+        System.out.println("spliterator: " + this.home.spliterator().toString());
+
     }
 
     @Override
@@ -39,9 +56,6 @@ public class Listenner extends Thread {
         try {
             // await user sign in
             this.awaitConnection();
-
-            // send path user
-            out.writeUTF(this.commands.success + " " + this.currentPath);
 
             // listening commands pwd, getfiles, getdirs ...
             this.listenCommands();
@@ -63,10 +77,10 @@ public class Listenner extends Thread {
     }
 
     protected void listenCommands() throws IOException {
-        String buffer = "";
         boolean noExit = true;
 
         while (noExit) {
+            String buffer = "";
             buffer = in.readUTF();
             String[] cmdParams = buffer.split(" ");
             noExit = this.executeCommands(buffer, cmdParams);
@@ -98,7 +112,7 @@ public class Listenner extends Thread {
 
         if (cmdParams[0].equals(this.commands.getDirs)) {
             System.out.println("---> Executing GETDIRS command ...");
-            out.writeUTF(":OK");
+            executeGetDirs();
             System.out.println("<--- GETDIRS executed ...");
             return true;
         }
@@ -151,7 +165,7 @@ public class Listenner extends Thread {
                 if (passwordIsCorrect) {
                     System.out.println("User " + user.user + " connected ...");
 
-                    File d = new File(this.currentPath.toString(), user.user);
+                    File d = new File(this.home.toString(), user.user);
 
                     if (!d.exists()) {
                         boolean created = d.mkdirs();
@@ -162,8 +176,8 @@ public class Listenner extends Thread {
                         }
                     }
 
-                    this.currentPath = this.currentPath.resolve(user.user);
-                    out.writeUTF(this.commands.success + " " + this.currentPath);
+                    this.home = this.home.resolve(user.user);
+                    out.writeUTF(this.commands.success + " " + this.home);
                     break;
                 }
                 out.writeUTF("Credentials incorrects");
@@ -189,23 +203,37 @@ public class Listenner extends Thread {
     }
 
     protected void executedChdir(String dirName) throws IOException {
-        this.currentPath = this.currentPath.resolve(dirName);
-        System.out.println(this.currentPath);
-        out.writeUTF(this.commands.chdir + " " + this.currentPath);
+
+        if (dirName.equals("..")) {
+            this.home = this.home.getParent();
+            System.out.println(this.home);
+            out.writeUTF(this.commands.chdir + " " + this.home);
+            return;
+        }
+
+        this.home = this.home.resolve(dirName);
+        System.out.println(this.home);
+        out.writeUTF(this.commands.chdir + " " + this.home);
     }
 
     protected void executeTouch(String name) throws IOException {
-        this.dirController.touch(this.currentPath.toString(), name);
+        this.dirController.touch(this.home.toString(), name);
         out.writeUTF(":OK");
     }
 
     protected void executeMkdir(String dirName) throws IOException {
-        this.dirController.mkdir(currentPath.toString(), dirName);
+        this.dirController.mkdir(home.toString(), dirName);
+        out.writeUTF(":OK");
+    }
+
+    protected void executeGetDirs() throws IOException {
+        String teste = this.home.subpath(0, 0).toString();
+        System.out.println(teste);
         out.writeUTF(":OK");
     }
 
     protected void executePwd() throws IOException {
-        out.writeUTF(this.currentPath.toString());
+        out.writeUTF(this.home.toString());
     }
 
     protected void executeGetFiles() throws IOException {

@@ -1,1 +1,1 @@
-java sockets_tcp.client.TCPClient
+java sockets_tcp.TCPClient

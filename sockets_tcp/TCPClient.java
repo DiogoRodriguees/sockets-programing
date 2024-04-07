@@ -1,4 +1,4 @@
-package sockets_tcp.client;
+package sockets_tcp;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -35,12 +35,13 @@ public class TCPClient {
             DataOutputStream out = new DataOutputStream(clientSocket.getOutputStream());
 
             // use buuffer to store message
-            String buffer = "";
             boolean userNoConnected = true;
 
             while (userNoConnected) {
+                String buffer = "";
                 System.out.print(localpath + " ");
-                buffer = reader.nextLine(); // read keyboard
+                // buffer = reader.nextLine(); // read keyboard
+                buffer = "connect diogo senha";
 
                 String[] cmdParams = buffer.split(" ");
                 if (checkAmountParams(cmdParams)) {
@@ -65,15 +66,16 @@ public class TCPClient {
                     String[] response = buffer.split(" ");
                     localpath = response[1];
                     userNoConnected = false;
+                    break;
                 }
                 System.out.println(buffer);
             }
 
             // while no receive exit command
             while (true) {
+                String buffer = "";
                 System.out.print(localpath + " $ ");
                 buffer = reader.nextLine();
-
                 if (buffer.equals(commands.exit))
                     break;
 
@@ -83,8 +85,9 @@ public class TCPClient {
 
                 // if receive chdir command -> update localpath
                 if (buffer.contains(commands.chdir)) {
-                    String newPath = buffer.split(" ")[1];
-                    localpath = newPath;
+                    String[] newPath = buffer.split(" ");
+                    localpath = newPath[1];
+                    System.out.println("Change directory to " + localpath);
                     continue;
                 }
 

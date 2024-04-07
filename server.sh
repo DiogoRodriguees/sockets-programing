@@ -1,2 +1,2 @@
 ./compile.sh
-java sockets_tcp.server.TCPServer
+java sockets_tcp.TCPServer

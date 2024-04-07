@@ -1,11 +1,11 @@
-package sockets_tcp.server;
+package sockets_tcp;
 
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 
 import sockets_tcp.classes.User;
-import sockets_tcp.services.Listenner;
+import sockets_tcp.threads.ListennerThread;
 
 public class TCPServer {
 
@@ -28,7 +28,7 @@ public class TCPServer {
                 Socket clientSocket = listenSocket.accept();
                 System.out.println("Cliente conectado ... Criando thread ...");
 
-                Listenner thread = new Listenner(clientSocket, users);
+                ListennerThread thread = new ListennerThread(clientSocket, users);
                 thread.start();
             }
 
