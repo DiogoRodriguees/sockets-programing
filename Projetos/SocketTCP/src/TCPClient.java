@@ -1,4 +1,4 @@
-package SocketTCP;
+
 
 /**
  * TCPClient: Cliente para conexao TCP
@@ -25,7 +25,7 @@ public class TCPClient {
                 
                 /* cria objetos de leitura e escrita */
                 DataInputStream in = new DataInputStream( clientSocket.getInputStream());
-                DataOutputStream out =new DataOutputStream( clientSocket.getOutputStream());
+                DataOutputStream out = new DataOutputStream( clientSocket.getOutputStream());
             
                 /* protocolo de comunicação */
                 String buffer = "";
