@@ -26,20 +26,33 @@ public class DirectoryController {
         }
     }
 
-    public void mkdir(String parent, String dirName) {
+    public File mkdir(String parent, String dirName) {
         File newDir = new File(parent, dirName);
-
         if (!newDir.exists()) {
             boolean created = newDir.mkdirs();
             if (created) {
                 System.out.println("Directory created successfully.");
             } else {
                 System.out.println("Failed to create directory.");
-                return;
+                return null;
             }
         }
-
+        return newDir.getAbsoluteFile();
     }
+
+    // public void createDir(String path, String dirName) {
+
+    // File d = new File(path, dirName);
+
+    // if (!d.exists()) {
+    // boolean created = d.mkdirs();
+    // if (created) {
+    // System.out.println("Directory created successfully.");
+    // } else {
+    // System.out.println("Failed to create directory.");
+    // }
+    // }
+    // }
     // public void mkdir(String parent, String dirName) {
     // File newDir = new File(parent, dirName);
 

@@ -40,8 +40,7 @@ public class TCPClient {
             while (userNoConnected) {
                 String buffer = "";
                 System.out.print(localpath + " ");
-                // buffer = reader.nextLine(); // read keyboard
-                buffer = "connect diogo senha";
+                buffer = reader.nextLine(); // read keyboard
 
                 String[] cmdParams = buffer.split(" ");
                 if (checkAmountParams(cmdParams)) {
@@ -76,24 +75,34 @@ public class TCPClient {
                 String buffer = "";
                 System.out.print(localpath + " $ ");
                 buffer = reader.nextLine();
+                String storageBuffer = buffer;
                 if (buffer.equals(commands.exit))
                     break;
 
                 // send message and await response
                 out.writeUTF(buffer);
-                buffer = in.readUTF(); // await confirm
+                buffer = in.readUTF();
 
                 // if receive chdir command -> update localpath
                 if (buffer.contains(commands.chdir)) {
                     String[] newPath = buffer.split(" ");
                     localpath = newPath[1];
-                    System.out.println("Change directory to " + localpath);
                     continue;
                 }
 
                 // show when no confirm message
-                if (!buffer.contains(commands.confirm)) {
-                    System.out.println(buffer);
+                if (!buffer.contains(commands.success)) {
+                    if (storageBuffer.contains("get")) {
+                        System.out.print(buffer);
+
+                    } else {
+                        System.out.println(buffer);
+
+                    }
+                }
+
+                if (buffer.contains(commands.error)) {
+                    System.out.println("Error on command: " + storageBuffer);
                 }
             }
         } catch (UnknownHostException ue) {

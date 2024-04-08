@@ -1,5 +1,6 @@
 package sockets_tcp;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -32,9 +33,17 @@ public class TCPServer {
                 thread.start();
             }
 
+        } catch (EOFException eof) {
+            System.out.println("Listen socket:" + eof.getMessage());
         } catch (IOException e) {
             System.out.println("Listen socket:" + e.getMessage());
+        } catch (UnsupportedOperationException unoe) {
+            System.out.println("Listen socket:" + unoe.getMessage());
+        } catch (Exception ex) {
+            System.out.println("Listen socket:" + ex.getMessage());
+
         } finally {
+
         }
     }
 }

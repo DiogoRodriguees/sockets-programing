@@ -18,10 +18,9 @@ public class ListennerThread extends Thread {
     Socket clientSocket;
     DataInputStream in;
     DataOutputStream out;
-
     Commands commands;
-
     User[] users;
+    User user;
     Path home;
     Path currentPath;
     DirectoryController dirController;
@@ -29,41 +28,32 @@ public class ListennerThread extends Thread {
     public ListennerThread(Socket clientSocket, User[] users) throws IOException {
         this.users = users;
         this.clientSocket = clientSocket;
+
         this.in = new DataInputStream(clientSocket.getInputStream());
         this.out = new DataOutputStream(clientSocket.getOutputStream());
+
         this.commands = new Commands();
         this.dirController = new DirectoryController();
         this.home = FileSystems.getDefault().getPath("sockets_tcp/users", "");
-
-        System.out.println("file system: " + this.home.getFileSystem());
-        System.out.println("current path: " + this.home);
-        System.out.println("path as string: " + this.home.toString());
-        System.out.println("file name: " + this.home.getFileName());
-        System.out.println("name count: " + this.home.getNameCount());
-        System.out.println("resolve: " + this.home.resolve("teste"));
-        System.out.println("to absolute path: " + this.home.toAbsolutePath());
-        System.out.println("get parent: " + this.home.getParent());
-        // System.out.println("get fileName: " +
-        // this.currentPath.fileName().toString());
-        // System.out.println("sub path: " + this.currentPath.subpath(0, 0));
-        System.out.println("spliterator: " + this.home.spliterator().toString());
-
     }
 
     @Override
     public void run() {
 
         try {
-            // await user sign in
-            this.awaitConnection();
 
-            // listening commands pwd, getfiles, getdirs ...
+            this.awaitConnection();
             this.listenCommands();
 
         } catch (EOFException eofe) {
             System.out.println("EOF: " + eofe.getMessage());
         } catch (IOException ioe) {
             System.out.println("IOE: " + ioe.getMessage());
+        } catch (UnsupportedOperationException uoe) {
+            System.out.println("UOE: " + uoe.getMessage());
+        } catch (Exception e) {
+
+            System.out.println("DEFAULT: " + e.getMessage());
         } finally {
             try {
                 in.close();
@@ -73,74 +63,8 @@ public class ListennerThread extends Thread {
                 System.err.println("IOE: " + ioe);
             }
         }
+
         System.out.println("Thread comunicação cliente finalizada.");
-    }
-
-    protected void listenCommands() throws IOException {
-        boolean noExit = true;
-
-        while (noExit) {
-            String buffer = "";
-            buffer = in.readUTF();
-            String[] cmdParams = buffer.split(" ");
-            noExit = this.executeCommands(buffer, cmdParams);
-        }
-    }
-
-    protected boolean executeCommands(String buffer, String[] cmdParams) throws IOException {
-
-        if (cmdParams[0].equals(this.commands.pwd)) {
-            System.out.println("---> Executing PWD command ...");
-            this.executePwd();
-            System.out.println("<--- PWD executed ...");
-            return true;
-        }
-
-        if (cmdParams[0].equals(this.commands.chdir)) {
-            System.out.println("---> Executing CHDIR command ...");
-            this.executedChdir(cmdParams[1]);
-            System.out.println("<--- CHDIR executed ...");
-            return true;
-        }
-
-        if (cmdParams[0].equals(this.commands.getFiles)) {
-            System.out.println("---> Executing GETFILES command ...");
-            this.executeGetFiles();
-            System.out.println("<--- GETFILES executed ...");
-            return true;
-        }
-
-        if (cmdParams[0].equals(this.commands.getDirs)) {
-            System.out.println("---> Executing GETDIRS command ...");
-            executeGetDirs();
-            System.out.println("<--- GETDIRS executed ...");
-            return true;
-        }
-
-        if (cmdParams[0].equals(this.commands.mkdir)) {
-            System.out.println("---> Executing MKDIR command ...");
-            this.executeMkdir(cmdParams[1]);
-            System.out.println("<--- MKDIR executed ...");
-            return true;
-        }
-
-        if (cmdParams[0].equals(this.commands.touch)) {
-            System.out.println("---> Executing TOUCH command ...");
-            this.executeTouch(cmdParams[1]);
-            System.out.println("<--- TOUCH executed ...");
-            return true;
-        }
-
-        if (buffer.equals(this.commands.exit)) {
-            System.out.println("---> Executing EXIT command ...");
-            System.out.println("User wish close connection");
-            out.writeUTF(this.commands.exit);
-            System.out.println("<--- EXIT executed ...");
-            return false;
-        }
-
-        out.writeUTF("Command not found");
-        return true;
     }
 
     protected void awaitConnection() throws IOException {
@@ -152,39 +76,102 @@ public class ListennerThread extends Thread {
             String[] cmdParams = buffer.split(" ");
 
             if (cmdParams.length == 3 && cmdParams[0].equals(this.commands.connect)) {
-
-                User user = this.getUserByName(cmdParams[1]);
+                String username = cmdParams[1];
+                String password = cmdParams[2];
+                User user = this.getUserByName(username);
 
                 if (user == null) {
                     out.writeUTF("User not found");
                     continue;
                 }
 
-                boolean passwordIsCorrect = this.checkUserPassword(cmdParams[2], user.password);
+                boolean passwordIsCorrect = this.checkUserPassword(password, user.password);
 
                 if (passwordIsCorrect) {
-                    System.out.println("User " + user.user + " connected ...");
+                    System.out.format("User %s connected ...\n", user.user);
 
-                    File d = new File(this.home.toString(), user.user);
-
-                    if (!d.exists()) {
-                        boolean created = d.mkdirs();
-                        if (created) {
-                            System.out.println("Directory created successfully.");
-                        } else {
-                            System.out.println("Failed to create directory.");
-                        }
-                    }
-
+                    // create dir and update home path
+                    // this.dirController.createDir(this.home.toString(), user.user);
                     this.home = this.home.resolve(user.user);
+
+                    // send response to client with status SUCCESS
                     out.writeUTF(this.commands.success + " " + this.home);
                     break;
                 }
-                out.writeUTF("Credentials incorrects");
 
-                continue;
+                out.writeUTF("Password incorrect");
             }
         }
+    }
+
+    protected void listenCommands() throws IOException, EOFException, UnsupportedOperationException {
+        boolean connected = true;
+
+        while (connected) {
+            String buffer = "";
+            buffer = in.readUTF();
+
+            String[] cmdParams = buffer.split(" ");
+            System.out.println("CMD splited");
+            connected = this.executeCommands(buffer, cmdParams);
+        }
+    }
+
+    protected boolean executeCommands(String buffer, String[] cmdParams) throws IOException {
+        boolean keepConnection = true;
+        String cmd = cmdParams[0];
+
+        if (cmd.equals(this.commands.pwd)) {
+            System.out.println("---> Executing PWD command ...");
+            this.executePwd();
+            System.out.println("<--- PWD executed ...");
+            return keepConnection;
+        }
+
+        if (cmd.equals(this.commands.chdir)) {
+            System.out.println("---> Executing CHDIR command ...");
+            this.executedChdir(cmdParams[1]);
+            System.out.println("<--- CHDIR executed ...");
+            return keepConnection;
+        }
+
+        if (cmd.equals(this.commands.getFiles)) {
+            System.out.println("---> Executing GETFILES command ...");
+            this.executeGetFiles();
+            System.out.println("<--- GETFILES executed ...");
+            return keepConnection;
+        }
+
+        if (cmd.equals(this.commands.getDirs)) {
+            System.out.println("---> Executing GETDIRS command ...");
+            executeGetDirs();
+            System.out.println("<--- GETDIRS executed ...");
+            return keepConnection;
+        }
+
+        if (cmd.equals(this.commands.mkdir)) {
+            System.out.println("---> Executing MKDIR command ...");
+            this.executeMkdir(cmdParams[1]);
+            System.out.println("<--- MKDIR executed ...");
+            return keepConnection;
+        }
+
+        if (cmd.equals(this.commands.touch)) {
+            System.out.println("---> Executing TOUCH command ...");
+            this.executeTouch(cmdParams[1]);
+            System.out.println("<--- TOUCH executed ...");
+            return keepConnection;
+        }
+
+        if (buffer.equals(this.commands.exit)) {
+            System.out.println("---> Executing EXIT command ...");
+            out.writeUTF(this.commands.exit);
+            System.out.println("<--- EXIT executed ...");
+            return !keepConnection;
+        }
+
+        out.writeUTF("Command not found");
+        return keepConnection;
     }
 
     protected boolean checkUserPassword(String password, String passoword2) {
@@ -202,8 +189,13 @@ public class ListennerThread extends Thread {
         return null;
     }
 
+    protected void executePwd() throws IOException {
+        out.writeUTF(this.home.toString());
+    }
+
     protected void executedChdir(String dirName) throws IOException {
 
+        // back directory
         if (dirName.equals("..")) {
             this.home = this.home.getParent();
             System.out.println(this.home);
@@ -211,32 +203,59 @@ public class ListennerThread extends Thread {
             return;
         }
 
-        this.home = this.home.resolve(dirName);
-        System.out.println(this.home);
-        out.writeUTF(this.commands.chdir + " " + this.home);
+        Path nextDir = this.home.resolve(dirName);
+        File homeFile = nextDir.toFile();
+        boolean pathExist = homeFile.exists();
+
+        if (pathExist) {
+            this.home = nextDir;
+            out.writeUTF(this.commands.chdir + " " + this.home);
+        } else {
+            out.writeUTF(this.commands.error);
+        }
     }
 
     protected void executeTouch(String name) throws IOException {
         this.dirController.touch(this.home.toString(), name);
-        out.writeUTF(":OK");
+        out.writeUTF(this.commands.success);
     }
 
     protected void executeMkdir(String dirName) throws IOException {
         this.dirController.mkdir(home.toString(), dirName);
-        out.writeUTF(":OK");
+        out.writeUTF(this.commands.success);
     }
 
-    protected void executeGetDirs() throws IOException {
-        String teste = this.home.subpath(0, 0).toString();
-        System.out.println(teste);
-        out.writeUTF(":OK");
-    }
+    protected void executeGetDirs() throws IOException, UnsupportedOperationException {
+        File file = this.home.toFile();
+        File[] files = file.listFiles();
 
-    protected void executePwd() throws IOException {
-        out.writeUTF(this.home.toString());
+        String response = "";
+
+        for (int i = 0; i < files.length; i++) {
+
+            if (files[i].isDirectory()) {
+                String name = files[i].getName();
+                response += name + "\n";
+            }
+        }
+
+        out.writeUTF(response);
     }
 
     protected void executeGetFiles() throws IOException {
-        out.writeUTF(":OK");
+        File file = this.home.toFile();
+        File[] files = file.listFiles();
+
+        String response = "";
+
+        for (int i = 0; i < files.length; i++) {
+
+            if (files[i].isFile()) {
+                String name = files[i].getName();
+                response += name + "\n";
+            }
+        }
+
+        out.writeUTF(response);
     }
 } // class
