@@ -70,21 +70,17 @@ public class ListennerThread extends Thread {
 
     protected void awaitConnection() throws IOException {
         String buffer = "";
-        Boolean userNoConnected = true;
 
-        while (userNoConnected) {
-            // read input buffer
+        while (true) {
+
             buffer = in.readUTF();
             String[] cmdParams = buffer.split(" ");
 
-            // check CONNECT command
             if (cmdParams.length == 3 && cmdParams[0].equals(this.commands.connect)) {
-                // extract params
                 String username = cmdParams[1];
                 String password = cmdParams[2];
                 User user = this.getUserByName(username);
 
-                // check if user
                 if (user == null) {
                     out.writeUTF("User not found");
                     continue;
@@ -95,91 +91,87 @@ public class ListennerThread extends Thread {
                 if (passwordIsCorrect) {
                     System.out.format("User %s connected ...\n", user.user);
 
-                    // update home path
+                    // create dir and update home path
+                    // this.dirController.createDir(this.home.toString(), user.user);
                     this.home = this.home.resolve(user.user);
-
-                    // set base route (/home/username)
                     this.userPath = this.home;
+                    // send response to client with status SUCCESS
                     out.writeUTF(this.commands.success + " " + this.home);
                     break;
                 }
 
-                out.writeUTF("Password incorrect" + "\n");
-            } else {
-                out.writeUTF("Command incorrect" + "\n");
+                out.writeUTF("Password incorrect");
             }
         }
     }
 
     protected void listenCommands() throws IOException, EOFException, UnsupportedOperationException {
-        boolean userConnected = true;
+        boolean connected = true;
 
-        while (userConnected) {
-            // read input buffer
+        while (connected) {
             String buffer = "";
             buffer = in.readUTF();
 
-            // execute command received
             String[] cmdParams = buffer.split(" ");
-            userConnected = this.executeCommands(buffer, cmdParams);
+            connected = this.executeCommands(buffer, cmdParams);
         }
     }
 
     protected boolean executeCommands(String buffer, String[] cmdParams) throws IOException {
-        boolean keepConnected = true;
+        boolean keepConnection = true;
         String cmd = cmdParams[0];
 
         if (cmd.equals(this.commands.pwd)) {
             System.out.println("---> Executing PWD command ...");
             this.executePwd();
             System.out.println("<--- PWD executed ...");
-            return keepConnected;
+            return keepConnection;
         }
 
         if (cmd.equals(this.commands.chdir)) {
             System.out.println("---> Executing CHDIR command ...");
             this.executedChdir(cmdParams[1]);
             System.out.println("<--- CHDIR executed ...");
-            return keepConnected;
+            return keepConnection;
         }
 
         if (cmd.equals(this.commands.getFiles)) {
             System.out.println("---> Executing GETFILES command ...");
             this.executeGetFiles();
             System.out.println("<--- GETFILES executed ...");
-            return keepConnected;
+            return keepConnection;
         }
 
         if (cmd.equals(this.commands.getDirs)) {
             System.out.println("---> Executing GETDIRS command ...");
-            this.executeGetDirs();
+            executeGetDirs();
             System.out.println("<--- GETDIRS executed ...");
-            return keepConnected;
+            return keepConnection;
         }
 
         if (cmd.equals(this.commands.mkdir)) {
             System.out.println("---> Executing MKDIR command ...");
             this.executeMkdir(cmdParams[1]);
             System.out.println("<--- MKDIR executed ...");
-            return keepConnected;
+            return keepConnection;
         }
 
         if (cmd.equals(this.commands.touch)) {
             System.out.println("---> Executing TOUCH command ...");
             this.executeTouch(cmdParams[1]);
             System.out.println("<--- TOUCH executed ...");
-            return keepConnected;
+            return keepConnection;
         }
 
         if (buffer.equals(this.commands.exit)) {
             System.out.println("---> Executing EXIT command ...");
             out.writeUTF(this.commands.exit);
             System.out.println("<--- EXIT executed ...");
-            return !keepConnected;
+            return !keepConnection;
         }
 
-        out.writeUTF(this.commands.error + " " + "Command not found" + "\n");
-        return keepConnected;
+        out.writeUTF("Command not found");
+        return keepConnection;
     }
 
     protected boolean checkUserPassword(String password, String passoword2) {
@@ -205,32 +197,25 @@ public class ListennerThread extends Thread {
 
         // back directory
         if (dirName.equals("..")) {
-            // check if current directory is home
             if (this.userPath.equals(this.home)) {
                 out.writeUTF(this.commands.chdir + " " + this.home);
                 return;
             }
-
-            // back directory
             this.home = this.home.getParent();
             System.out.println(this.home);
-
-            // send response
             out.writeUTF(this.commands.chdir + " " + this.home);
             return;
         }
 
-        // change to directory received
         Path nextDir = this.home.resolve(dirName);
         File homeFile = nextDir.toFile();
         boolean pathExist = homeFile.exists();
 
-        // retur error if path not exist
         if (pathExist) {
             this.home = nextDir;
             out.writeUTF(this.commands.chdir + " " + this.home);
         } else {
-            out.writeUTF(this.commands.error + " " + "Directory no exist" + "\n");
+            out.writeUTF(this.commands.error);
         }
     }
 
