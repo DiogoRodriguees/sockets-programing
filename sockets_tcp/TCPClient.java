@@ -36,6 +36,7 @@ public class TCPClient {
 
             // use buuffer to store message
             boolean userNoConnected = true;
+            boolean userConnected = true;
 
             while (userNoConnected) {
                 String buffer = "";
@@ -48,10 +49,6 @@ public class TCPClient {
                     continue;
                 }
 
-                if (!cmdParams[0].equals(commands.connect)) {
-                    System.out.println("Command not found");
-                    continue;
-                }
                 String user = cmdParams[1]; // use diogo
                 String password = cmdParams[2];// use senha
 
@@ -75,38 +72,33 @@ public class TCPClient {
             }
 
             // while no receive exit command
-            while (true) {
+            while (userConnected) {
+                // read input terminal
                 String buffer = "";
                 System.out.print(localpath + " $ ");
                 buffer = reader.nextLine();
                 String storageBuffer = buffer;
+
+                // break case command is exit
                 if (buffer.equals(commands.exit))
                     break;
 
-                // send message and await response
+                // read output buffer - server response
                 out.writeUTF(buffer);
                 buffer = in.readUTF();
 
-                // if receive chdir command -> update localpath
+                // change localpath when command chdir return sucess
                 if (buffer.contains(commands.chdir)) {
                     String[] newPath = buffer.split(" ");
                     localpath = newPath[1];
                     continue;
                 }
 
-                // show when no confirm message
+                // check response command
                 if (!buffer.contains(commands.success)) {
-                    if (storageBuffer.contains("get")) {
-                        System.out.print(buffer);
-
-                    } else {
-                        System.out.println(buffer);
-
-                    }
-                }
-
-                if (buffer.contains(commands.error)) {
-                    System.out.println("Error on command: " + storageBuffer);
+                    System.out.print(buffer);
+                } else if (buffer.contains(commands.error)) {
+                    System.out.println("Command error: " + storageBuffer);
                 }
             }
         } catch (UnknownHostException ue) {
