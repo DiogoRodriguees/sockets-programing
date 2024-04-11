@@ -70,17 +70,21 @@ public class ListennerThread extends Thread {
 
     protected void awaitConnection() throws IOException {
         String buffer = "";
+        boolean noConnected = true;
 
-        while (true) {
-
+        while (noConnected) {
+            // read input buffer
             buffer = in.readUTF();
             String[] cmdParams = buffer.split(" ");
 
+            // check if params is correct
             if (cmdParams.length == 3 && cmdParams[0].equals(this.commands.connect)) {
+                // extrac params
                 String username = cmdParams[1];
                 String password = cmdParams[2];
                 User user = this.getUserByName(username);
 
+                // return case user not exist
                 if (user == null) {
                     out.writeUTF("User not found");
                     continue;
@@ -91,29 +95,33 @@ public class ListennerThread extends Thread {
                 if (passwordIsCorrect) {
                     System.out.format("User %s connected ...\n", user.user);
 
-                    // create dir and update home path
-                    // this.dirController.createDir(this.home.toString(), user.user);
+                    // update localpath and homepath
+                    this.dirController.mkdir(this.home.toString(), user.user);
                     this.home = this.home.resolve(user.user);
                     this.userPath = this.home;
+
                     // send response to client with status SUCCESS
                     out.writeUTF(this.commands.success + " " + this.home);
                     break;
+                } else {
+                    out.writeUTF("Password incorrect");
                 }
 
-                out.writeUTF("Password incorrect");
+            } else {
+                out.writeUTF(this.commands.error + " " + "Command not found");
             }
         }
     }
 
     protected void listenCommands() throws IOException, EOFException, UnsupportedOperationException {
-        boolean connected = true;
+        boolean keepConnection = true;
 
-        while (connected) {
+        while (keepConnection) {
             String buffer = "";
             buffer = in.readUTF();
 
             String[] cmdParams = buffer.split(" ");
-            connected = this.executeCommands(buffer, cmdParams);
+            keepConnection = this.executeCommands(buffer, cmdParams);
         }
     }
 
