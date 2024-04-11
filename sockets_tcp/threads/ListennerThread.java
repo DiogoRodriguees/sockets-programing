@@ -21,6 +21,7 @@ public class ListennerThread extends Thread {
     Commands commands;
     User[] users;
     User user;
+    Path userPath;
     Path home;
     Path currentPath;
     DirectoryController dirController;
@@ -93,7 +94,7 @@ public class ListennerThread extends Thread {
                     // create dir and update home path
                     // this.dirController.createDir(this.home.toString(), user.user);
                     this.home = this.home.resolve(user.user);
-
+                    this.userPath = this.home;
                     // send response to client with status SUCCESS
                     out.writeUTF(this.commands.success + " " + this.home);
                     break;
@@ -112,7 +113,6 @@ public class ListennerThread extends Thread {
             buffer = in.readUTF();
 
             String[] cmdParams = buffer.split(" ");
-            System.out.println("CMD splited");
             connected = this.executeCommands(buffer, cmdParams);
         }
     }
@@ -197,6 +197,10 @@ public class ListennerThread extends Thread {
 
         // back directory
         if (dirName.equals("..")) {
+            if (this.userPath.equals(this.home)) {
+                out.writeUTF(this.commands.chdir + " " + this.home);
+                return;
+            }
             this.home = this.home.getParent();
             System.out.println(this.home);
             out.writeUTF(this.commands.chdir + " " + this.home);
@@ -230,6 +234,10 @@ public class ListennerThread extends Thread {
         File[] files = file.listFiles();
 
         String response = "";
+        if (files == null) {
+            out.writeUTF(response);
+            return;
+        }
 
         for (int i = 0; i < files.length; i++) {
 
@@ -247,7 +255,10 @@ public class ListennerThread extends Thread {
         File[] files = file.listFiles();
 
         String response = "";
-
+        if (files == null) {
+            out.writeUTF(response);
+            return;
+        }
         for (int i = 0; i < files.length; i++) {
 
             if (files[i].isFile()) {

@@ -48,6 +48,10 @@ public class TCPClient {
                     continue;
                 }
 
+                if (!cmdParams[0].equals(commands.connect)) {
+                    System.out.println("Command not found");
+                    continue;
+                }
                 String user = cmdParams[1]; // use diogo
                 String password = cmdParams[2];// use senha
 
