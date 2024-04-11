@@ -3,6 +3,7 @@
 #
 # FIles xml
 *.xml
+*.idea
 
 # Log file
 *.log
