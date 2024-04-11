@@ -38,7 +38,7 @@ public class TCPClient {
             DataInputStream in = new DataInputStream(clientSocket.getInputStream());
             DataOutputStream output = new DataOutputStream(clientSocket.getOutputStream());
 
-            // Definindo o protocolo de comunicação
+            // Implementando o protocolo de comunicação
             String buffer = "";
             String filenameDown = "";
             while (true) {
@@ -47,7 +47,6 @@ public class TCPClient {
                 buffer = reader.nextLine(); // lê mensagem via teclado
 
                 handleCommand(buffer, output);
-
 
                 byte[] headerBytes = new byte[258];
                 in.read(headerBytes);
@@ -208,6 +207,9 @@ public class TCPClient {
         while ((byteReaded = fis.read()) != -1) {
             output.write(byteReaded);
         }
+        // TO DO: verificar se assim está correto ou
+        // se é necessário concatenar todos os dados do arquivo e
+        // depois enviar tudo em apenas uma escrita
     }
 
 
