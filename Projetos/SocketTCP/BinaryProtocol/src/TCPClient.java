@@ -11,7 +11,7 @@
  * 
  * Data de criação: 07/04/2024
  * 
- * Datas de atualização: 
+ * Datas de atualização: 11/04
 **/
 
 import java.net.*;
@@ -23,8 +23,8 @@ import java.util.Arrays;
 
 public class TCPClient {
     public static void main(String args[]) {
-        Socket clientSocket = null;               // socket do cliente
-        Scanner reader = new Scanner(System.in);  // ler mensagens via teclado
+        Socket clientSocket = null;               // Socket do cliente
+        Scanner reader = new Scanner(System.in);  // Objeto para ler mensagens via teclado
 
         try {
             // Obtendo o endereço IP e a porta do servidor
@@ -40,7 +40,6 @@ public class TCPClient {
 
             // Implementando o protocolo de comunicação
             String buffer = "";
-            String filenameDown = "";
             while (true) {
 
                 System.out.print("$ ");
@@ -48,6 +47,7 @@ public class TCPClient {
 
                 handleCommand(buffer, output);
 
+                // Response handler (modularizar?)
                 byte[] headerBytes = new byte[258];
                 in.read(headerBytes);
                 ByteBuffer headerBuffer = ByteBuffer.wrap(headerBytes);
@@ -55,8 +55,10 @@ public class TCPClient {
                 byte messageType = headerBuffer.get();
                 byte commandId = headerBuffer.get();
 
-                // Verificando qual o tipo de comando realizado pelo servidor para tratar o cabeçalho corretamente
+                // Verificando se o tipo da mensagem é uma resposta
                 if(messageType == 0x02) {
+                    
+                    // Verificando a qual comando o servidor está respondendo
                     switch(commandId){
                         case 0x01:
                             // handleDeleteAndAddFileResponse(headerBuffer, commandId);
@@ -111,7 +113,7 @@ public class TCPClient {
         } else if (splitedCommand[0].equals("GETFILE") && splitedCommand.length == 2) {
             // sendGetFileRequest(output, (byte) 4, splitedCommand[1]);
         } else {
-            System.out.println("Comando inválido");
+            System.out.println("Command not found.");
         }
     } // handleCommand
 
@@ -161,6 +163,8 @@ public class TCPClient {
     /**
      * Método para criar o cabeçalho de uma requisição.
      * 
+     * TODO: alterar este método para ser uma requisição comum (remover os campos da solicitação ADDFILE)
+     * 
      * @param commandIdentifier - Identificador do comando.
      * @param sizeOfFilename - Tamanho do nome do arquivo.
      * @param filenameBytes - Nome do arquivo em bytes.
@@ -207,9 +211,6 @@ public class TCPClient {
         while ((byteReaded = fis.read()) != -1) {
             output.write(byteReaded);
         }
-        // TO DO: verificar se assim está correto ou
-        // se é necessário concatenar todos os dados do arquivo e
-        // depois enviar tudo em apenas uma escrita
     }
 
 

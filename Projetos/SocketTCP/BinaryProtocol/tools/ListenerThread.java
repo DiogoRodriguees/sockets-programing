@@ -41,15 +41,11 @@ public class ListenerThread extends Thread {
     @Override
     public void run() {
 
-        int size = 258;
-
         try {
 
             while (true) {
 
-                String buffer = "";
-
-                // handle request (modularizar?)
+                // handle request (TODO: modularizar?)
                 byte[] request = new byte[258];
                 this.input.read(request);
 
@@ -63,9 +59,9 @@ public class ListenerThread extends Thread {
                 byte[] filenameBytes = new byte[filenameSize];      // Cria um array de bytes para o nome do arquivo
                 header.get(filenameBytes);                          // Obtém o nome do arquivo em bytes (tamanho variável)
                 String filename = new String(filenameBytes);        // Converte o nome do arquivo para String
-                Integer fileSize = header.getInt();                 // Obtém o tamanho do conteúdo do arquivo
+                Integer sizeOfContentFile = header.getInt();        // Obtém o tamanho do conteúdo do arquivo
 
-                Logger logger = Logger.getLogger("server.log");     // Associa o arquivo .log criado à variável logger
+                Logger logger = Logger.getLogger("server.log");     // Associa o arquivo .log à variável logger
 
                 // Verificando se o tipo da mensagem é uma requisição
                 if (messageType == 1) {
@@ -76,7 +72,7 @@ public class ListenerThread extends Thread {
                             " | File Name: "        + filename);
 
                     if (commandId == 1) {
-                        handleAddFile(this.output, filename, fileSize, commandId);
+                        handleAddFile(this.output, filename, sizeOfContentFile, commandId, logger);
 
                     } else if (commandId == 2) {
                         // handleDelete(this.output, filename);
@@ -87,8 +83,8 @@ public class ListenerThread extends Thread {
                     } else if (commandId == 4) {
                         // handleGetFile(this.output, filename);
                     }
-                }
-            }
+                } // if message type
+            } // while
         } catch (EOFException eofe) {
             System.out.println("EOF: " + eofe.getMessage());
         } catch (IOException ioe) {
@@ -105,43 +101,67 @@ public class ListenerThread extends Thread {
         System.out.println("Comunication client-server finished.");
     } // run
 
-    public void handleAddFile(DataOutputStream output, String filename, Integer fileSize, byte commandId) {
+    public void handleAddFile(DataOutputStream output, String filename, Integer sizeOfContentFile, byte commandId, Logger logger) throws IOException {
         
-        // System.out.println("Tamanho do arquivo: " + fileSize);
+        // System.out.println("Tamanho do arquivo: " + sizeOfContentFile); TODO: remover
+
+        byte SUCCESS = (byte) 1;
+        byte ERROR = (byte) 2;
         
-        if(fileSize.intValue() > 0) {
-            byte[] bytes = new byte[1];
-            byte[] contentByte = new byte[fileSize];
+        if(sizeOfContentFile.intValue() > 0) {
+            byte[] byteReaded = new byte[1];
+            byte[] fileContentBytes = new byte[sizeOfContentFile];
             
-            for (int i = 0; i < fileSize; i++) {
-                this.input.read(bytes);
-                byte b = bytes[0];
-                contentByte[i] = b;
+            // Realiza a leitura dos bytes do arquivo recebido
+            for (int i = 0; i < sizeOfContentFile; i++) {
+                this.input.read(byteReaded);
+
+                byte b = byteReaded[0];
+                fileContentBytes[i] = b;
+                // fileContentBytes[i] = byteReaded[0]; // TODO: testar trocar (?)
             }
 
-            int worked = 0;
-            String content = new String(contentByte);
-            File file = new File(this.serverPath + filename);
-            if (file.createNewFile()) {
-                FileWriter writer = new FileWriter(file, true);
+            String fileContentString = new String(fileContentBytes);
+            File newFile = new File(this.serverPath + filename);
+
+            if (newFile.createNewFile()) {
+
+                FileWriter writer = new FileWriter(newFile, true);
                 BufferedWriter buf = new BufferedWriter(writer);
-                buf.write(content);
+                buf.write(fileContentString);
                 buf.flush();
                 buf.close();
-                worked = 1;
+
+                logger.info("File " + filename + " added successfully!\n");
+                logger.info("Sending response to client...");
+                commonResponse(this.output, SUCCESS, SUCCESS);
+
+            } else {
+                
+                logger.info("Something went wrong when copying the file " + filename);
+                logger.info("Sending response to client...");
+                commonResponse(this.output, commandId, ERROR);
             }
 
-            if(worked == 1) {
-                logger.info("Arquivo " + filename + " adicionado com sucesso\n");
-                logger.info("Enviando resposta para o cliente");
-                sendDeleteAndAddFileResponse(this.output, (byte) 1, (byte) 1);
-            } else {
-                logger.info("Erro ao copiar arquivo " + filename);
-                logger.info("Enviando resposta para o cliente");
-                sendDeleteAndAddFileResponse(this.output, (byte) 1, (byte) 0);
-            }
         } else {
-            sendDeleteAndAddFileResponse(this.output, commandId, (byte) 0);
+            commonResponse(this.output, commandId, ERROR);
         }
+    } // handleAddFile
+
+    /**
+     * Este método envia um cabeçalho de resposta comum para os comandos que não exigem
+     * um cabeçalho específico, de acordo com o protocolo estabelecido. Isto é, será 
+     * utilizado como resposta aos comandos ADDFILE e DELETE.
+     * 
+     * TODO: add params
+     */
+    private void commonResponse(DataOutputStream out, byte command, byte status) throws IOException {
+        ByteBuffer header = ByteBuffer.allocate(3);
+        header.order(ByteOrder.BIG_ENDIAN);
+        header.put((byte) 2);
+        header.put(command);
+        header.put(status);
+        out.write(header.array());
+        out.flush();
     }
 }
