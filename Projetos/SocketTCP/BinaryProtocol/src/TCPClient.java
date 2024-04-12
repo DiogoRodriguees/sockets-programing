@@ -57,14 +57,15 @@ public class TCPClient {
 
                 // Verificando se o tipo da mensagem é uma resposta
                 if(messageType == 0x02) {
+                    byte statusCode = headerBuffer.get();
                     
                     // Verificando a qual comando o servidor está respondendo
                     switch(commandId){
                         case 0x01:
-                            // handleDeleteAndAddFileResponse(headerBuffer, commandId);
+                            handleAddFileResponse(statusCode);
                             break;
                         case 0x02:
-                            // handleDeleteAndAddFileResponse(headerBuffer, commandId);
+                            handleDeleteFileResponse(statusCode);
                             break;
                         case 0x03:
                             // handleGetFilesListResponse(headerBuffer);
@@ -213,5 +214,22 @@ public class TCPClient {
         }
     }
 
+    private static void handleAddFileResponse(byte statusCode) throws IOException{
+        
+        if(statusCode == 0x01){
+            System.out.println("Status: " + statusCode + " - File uploded successfully!");
+        } else{
+            System.out.println("Status: " + statusCode + " - Something went wrong when uploading the file.");
+        }
+    }
+
+    private static void handleDeleteFileResponse(byte statusCode) throws IOException {
+        
+        if (statusCode == 0x01) {
+            System.out.println("Status: " + statusCode + " - File deleted successfully!");
+        } else {
+            System.out.println("Status: " + statusCode + " - Something went wrong when deleting the file.");
+        }
+    }
 
 } // class

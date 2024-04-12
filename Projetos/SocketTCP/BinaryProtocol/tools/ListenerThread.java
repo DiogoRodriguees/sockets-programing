@@ -132,18 +132,20 @@ public class ListenerThread extends Thread {
                 buf.flush();
                 buf.close();
 
-                logger.info("File " + filename + " added successfully!\n");
+                logger.info("File '" + filename + "'' was added successfully!\n");
                 logger.info("Sending response to client...");
                 commonResponse(this.output, SUCCESS, SUCCESS);
 
             } else {
                 
-                logger.info("Something went wrong when copying the file " + filename);
+                logger.info("Something went wrong when copying the file '" + filename + "'.");
                 logger.info("Sending response to client...");
                 commonResponse(this.output, commandId, ERROR);
             }
 
         } else {
+            logger.info("The file '" + filename + "' has no content.");
+            logger.info("Sending response to client...");
             commonResponse(this.output, commandId, ERROR);
         }
     } // handleAddFile
@@ -155,13 +157,13 @@ public class ListenerThread extends Thread {
      * 
      * TODO: add params
      */
-    private void commonResponse(DataOutputStream out, byte command, byte status) throws IOException {
-        ByteBuffer header = ByteBuffer.allocate(3);
-        header.order(ByteOrder.BIG_ENDIAN);
-        header.put((byte) 2);
-        header.put(command);
-        header.put(status);
-        out.write(header.array());
-        out.flush();
+    private void commonResponse(DataOutputStream output, byte commandId, byte status) throws IOException {
+        ByteBuffer header = ByteBuffer.allocate(3); // Alocando 3 bytes para o cabeçalho
+        header.order(ByteOrder.BIG_ENDIAN);         // Definindo a ordem dos bytes como big endian
+        header.put((byte) 2);                       // Tipo da mensagem (2 == Resposta)
+        header.put(commandId);                      // Identificador do comando
+        header.put(status);                         // Status (1 == SUCCESS || 2 == ERROR)
+        output.write(header.array());               // Convertendo o cabeçalho para um array de bytes
+        output.flush();
     }
 }
