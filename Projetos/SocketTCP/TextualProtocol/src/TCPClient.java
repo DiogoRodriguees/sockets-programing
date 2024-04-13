@@ -56,7 +56,7 @@ public class TCPClient {
                 clientSocket.close();
             } catch (IOException ioe) {
                 System.out.println("IO: " + ioe);
-
+                ;
             }
         }
     } // main
