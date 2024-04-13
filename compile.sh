@@ -1,4 +1,4 @@
-javac sockets_tcp/classes/*.java
-javac sockets_tcp/controllers/*.java
-javac sockets_tcp/threads/*.java
-javac sockets_tcp/*.java
+PATH_MAIN_FILES=src/*.java
+
+echo "Compiling $PATH_MAIN_FILES ..."
+javac $PATH_MAIN_FILES

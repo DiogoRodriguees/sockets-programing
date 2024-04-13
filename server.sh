@@ -1,2 +1,4 @@
-# ./compile.sh
-java sockets_tcp.TCPServer
+server=src.TCPServer
+
+echo "Running server $server ..."
+java $server
