@@ -1,5 +1,12 @@
 # Compiled class file
 *.class
+#
+# FIles xml
+*.xml
+*.idea
+
+# exclude path users
+src/users/*
 
 # Log file
 *.log

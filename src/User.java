@@ -1,4 +1,4 @@
-package sockets_tcp.classes;
+package src;
 
 public class User {
     public String user;

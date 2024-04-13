@@ -1,4 +1,4 @@
-package sockets_tcp.client;
+package src;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -11,8 +11,6 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 import java.util.Scanner;
-
-import sockets_tcp.classes.Commands;
 
 public class TCPClient {
 
@@ -35,10 +33,11 @@ public class TCPClient {
             DataOutputStream out = new DataOutputStream(clientSocket.getOutputStream());
 
             // use buuffer to store message
-            String buffer = "";
             boolean userNoConnected = true;
+            boolean userConnected = true;
 
             while (userNoConnected) {
+                String buffer = "";
                 System.out.print(localpath + " ");
                 buffer = reader.nextLine(); // read keyboard
 
@@ -65,32 +64,39 @@ public class TCPClient {
                     String[] response = buffer.split(" ");
                     localpath = response[1];
                     userNoConnected = false;
+                    break;
                 }
                 System.out.println(buffer);
             }
 
             // while no receive exit command
-            while (true) {
+            while (userConnected) {
+                // read input terminal
+                String buffer = "";
                 System.out.print(localpath + " $ ");
                 buffer = reader.nextLine();
+                String storageBuffer = buffer;
 
+                // break case command is exit
                 if (buffer.equals(commands.exit))
                     break;
 
-                // send message and await response
+                // read output buffer - server response
                 out.writeUTF(buffer);
-                buffer = in.readUTF(); // await confirm
+                buffer = in.readUTF();
 
-                // if receive chdir command -> update localpath
+                // change localpath when command chdir return sucess
                 if (buffer.contains(commands.chdir)) {
-                    String newPath = buffer.split(" ")[1];
-                    localpath = newPath;
+                    String[] newPath = buffer.split(" ");
+                    localpath = newPath[1];
                     continue;
                 }
 
-                // show when no confirm message
-                if (!buffer.contains(commands.confirm)) {
-                    System.out.println(buffer);
+                // check response command
+                if (!buffer.contains(commands.success)) {
+                    System.out.print(buffer);
+                } else if (buffer.contains(commands.error)) {
+                    System.out.println("Command error: " + storageBuffer);
                 }
             }
         } catch (UnknownHostException ue) {
