@@ -2,6 +2,7 @@ package src;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 
 public class Directory {
 
@@ -34,7 +35,7 @@ public class Directory {
                 return null;
             }
         }
-        return newDir.getAbsoluteFile();
+        return newDir;
     }
 
     public String getDirs(File[] files) {
