@@ -196,7 +196,7 @@ public class Listenner extends Thread {
     }
 
     protected void executePwd() throws IOException {
-        out.writeUTF(this.home.toString());
+        out.writeUTF(this.home.toString() + " \n");
     }
 
     protected void executedChdir(String dirName) throws IOException {
