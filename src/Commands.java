@@ -1,7 +1,6 @@
 package src;
 
 public class Commands {
-    // Question 1
     final public String connect = "CONNECT";
     final public String success = "SUCESS";
     final public String error = "ERROR";
