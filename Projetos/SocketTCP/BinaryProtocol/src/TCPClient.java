@@ -11,7 +11,7 @@
  * 
  * Data de criação: 07/04/2024
  * 
- * Datas de atualização: 11/04
+ * Datas de atualização: 11/04, 12/04
 **/
 
 import java.net.*;
@@ -216,9 +216,9 @@ public class TCPClient {
 
     private static void handleAddFileResponse(byte statusCode) throws IOException{
         
-        if(statusCode == 0x01){
+        if(statusCode == 0x01) {
             System.out.println("Status: " + statusCode + " - File uploded successfully!");
-        } else{
+        } else {
             System.out.println("Status: " + statusCode + " - Something went wrong when uploading the file.");
         }
     }

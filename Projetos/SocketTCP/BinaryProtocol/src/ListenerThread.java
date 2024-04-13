@@ -1,4 +1,4 @@
-package BinaryProtocol.tools;
+
 
 import java.io.BufferedWriter;
 import java.io.DataInputStream;
