@@ -8,10 +8,11 @@ import java.net.Socket;
 public class TCPServer {
 
     public static void main(String args[]) {
+        ServerSocket listenSocket;
 
         try {
             int serverPort = 6666; // porta do servidor
-            ServerSocket listenSocket = new ServerSocket(serverPort);
+            listenSocket = new ServerSocket(serverPort);
 
             String user1 = "diogo";
             String user2 = "gustavo";
@@ -38,9 +39,6 @@ public class TCPServer {
             System.out.println("Listen socket:" + unoe.getMessage());
         } catch (Exception ex) {
             System.out.println("Listen socket:" + ex.getMessage());
-
-        } finally {
-
         }
     }
 }
