@@ -204,6 +204,7 @@ public class Listenner extends Thread {
         boolean pathIsValid = !(path == null);
 
         if (pathIsValid) {
+            this.home = path;
             out.writeUTF(this.commands.chdir + " " + path);
         } else {
             out.writeUTF(this.commands.error + " \n");
