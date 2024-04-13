@@ -5,6 +5,9 @@
 *.xml
 *.idea
 
+# exclude path users
+src/users/*
+
 # Log file
 *.log
 
