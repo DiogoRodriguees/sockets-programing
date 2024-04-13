@@ -34,7 +34,7 @@ public class Listenner extends Thread {
 
         this.commands = new Commands();
         this.dirController = new Directory();
-        this.home = FileSystems.getDefault().getPath("sockets_tcp/users", "");
+        this.home = FileSystems.getDefault().getPath("src/users", "");
     }
 
     @Override
@@ -95,8 +95,8 @@ public class Listenner extends Thread {
                     System.out.format("User %s connected ...\n", user.user);
 
                     // update localpath and homepath
-                    this.dirController.mkdir(this.home.toString(), user.user);
-                    this.home = this.home.resolve(user.user);
+                    File file = this.dirController.mkdir(this.home.toString(), user.user);
+                    this.home = file.toPath();
                     this.userPath = this.home;
 
                     // send response to client with status SUCCESS
