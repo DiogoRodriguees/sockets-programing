@@ -71,4 +71,32 @@ public class Directory {
 
         return response;
     }
+
+    private Path backDirectory(Path currentPath, String destinationPath, Path limitPath) {
+        if (limitPath.equals(currentPath)) {
+            return currentPath;
+        }
+
+        return currentPath.getParent();
+    }
+
+    private Path entryOnDirectory(Path currentPath, String destinationPath) {
+        Path nextDir = currentPath.resolve(destinationPath);
+        File homeFile = nextDir.toFile();
+
+        if (homeFile.exists()) {
+            currentPath = nextDir;
+            return currentPath;
+        } else {
+            return null;
+        }
+    }
+
+    public Path chdir(Path currentPath, String destinationPath, Path limitPath) {
+        if (destinationPath.equals("..")) {
+            return this.backDirectory(currentPath, destinationPath, limitPath);
+        } else {
+            return this.entryOnDirectory(currentPath, destinationPath);
+        }
+    }
 }

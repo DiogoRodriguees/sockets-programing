@@ -14,12 +14,15 @@ public class Listenner extends Thread {
     Socket clientSocket;
     DataInputStream in;
     DataOutputStream out;
-    Commands commands;
-    User[] users;
+
     User user;
-    Path userPath;
+    User[] users;
+
     Path home;
+    Path userPath;
     Path currentPath;
+
+    Commands commands;
     Directory dirController;
 
     public Listenner(Socket clientSocket, User[] users) throws IOException {
@@ -183,14 +186,13 @@ public class Listenner extends Thread {
     }
 
     protected User getUserByName(String name) {
+        User user = null;
 
-        for (int i = 0; i < 2; i++) {
-            if (this.users[i].user.equals(name)) {
-                return this.users[i];
-            }
-        }
+        for (int i = 0; i < 2; i++)
+            if (this.users[i].user.equals(name))
+                user = this.users[i];
 
-        return null;
+        return user;
     }
 
     protected void executePwd() throws IOException {
@@ -198,28 +200,13 @@ public class Listenner extends Thread {
     }
 
     protected void executedChdir(String dirName) throws IOException {
+        Path path = this.dirController.chdir(this.home, dirName, this.userPath);
+        boolean pathIsValid = !(path == null);
 
-        // back directory
-        if (dirName.equals("..")) {
-            if (this.userPath.equals(this.home)) {
-                out.writeUTF(this.commands.chdir + " " + this.home);
-                return;
-            }
-            this.home = this.home.getParent();
-            System.out.println(this.home);
-            out.writeUTF(this.commands.chdir + " " + this.home);
-            return;
-        }
-
-        Path nextDir = this.home.resolve(dirName);
-        File homeFile = nextDir.toFile();
-        boolean pathExist = homeFile.exists();
-
-        if (pathExist) {
-            this.home = nextDir;
-            out.writeUTF(this.commands.chdir + " " + this.home);
+        if (pathIsValid) {
+            out.writeUTF(this.commands.chdir + " " + path);
         } else {
-            out.writeUTF(this.commands.error);
+            out.writeUTF(this.commands.error + " \n");
         }
     }
 
@@ -234,18 +221,19 @@ public class Listenner extends Thread {
     }
 
     protected void executeGetDirs() throws IOException, UnsupportedOperationException {
-        File file = this.home.toFile();
-        File[] files = file.listFiles();
-
-        String response = this.dirController.getDirs(files);
+        File[] files = this.convertPathToFileList(this.home);
+        String response = this.dirController.getDirs(files); // get only directories
         out.writeUTF(response);
     }
 
     protected void executeGetFiles() throws IOException {
-        File file = this.home.toFile();
-        File[] files = file.listFiles();
-
-        String response = this.dirController.getFiles(files);
+        File[] files = this.convertPathToFileList(this.home);
+        String response = this.dirController.getFiles(files); // get only files
         out.writeUTF(response);
+    }
+
+    protected File[] convertPathToFileList(Path path) {
+        File file = path.toFile();
+        return file.listFiles();
     }
 } // class
