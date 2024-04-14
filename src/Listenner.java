@@ -20,7 +20,6 @@ public class Listenner extends Thread {
 
     Path home;
     Path userPath;
-    Path currentPath;
 
     Commands commands;
     Directory dirController;
@@ -41,10 +40,8 @@ public class Listenner extends Thread {
     public void run() {
 
         try {
-
             this.awaitConnection();
             this.listenCommands();
-
         } catch (EOFException eofe) {
             System.out.println("EOF: " + eofe.getMessage());
         } catch (IOException ioe) {
@@ -69,47 +66,56 @@ public class Listenner extends Thread {
 
     protected void awaitConnection() throws IOException {
         String buffer = "";
-        boolean noConnected = true;
+        boolean connected = false;
 
-        while (noConnected) {
-            // read input buffer
+        while (!connected) {
+
+            // Read input buffer
             buffer = in.readUTF();
             String[] cmdParams = buffer.split(" ");
 
-            // check if params is correct
+            // Validate command and params
             if (cmdParams.length == 3 && cmdParams[0].equals(this.commands.connect)) {
-                // extrac params
+                // Extract params
                 String username = cmdParams[1];
                 String password = cmdParams[2];
-                User user = this.getUserByName(username);
 
-                // return case user not exist
-                if (user == null) {
-                    out.writeUTF("User not found");
+                // Trying connection
+                User user = this.getUserByName(username);
+                boolean successOnConnect = this.connectUser(user, password);
+
+                if (successOnConnect) {
+                    connected = true;
                     continue;
                 }
 
-                boolean passwordIsCorrect = this.checkUserPassword(password, user.password);
-
-                if (passwordIsCorrect) {
-                    System.out.format("User %s connected ...\n", user.user);
-
-                    // update localpath and homepath
-                    File file = this.dirController.mkdir(this.home.toString(), user.user);
-                    this.home = file.toPath();
-                    this.userPath = this.home;
-
-                    // send response to client with status SUCCESS
-                    out.writeUTF(this.commands.success + " " + this.home);
-                    break;
-                } else {
-                    out.writeUTF("Password incorrect");
-                }
-
-            } else {
-                out.writeUTF(this.commands.error + " " + "Command not found");
+                out.writeUTF("Credentials incorrect");
+                continue;
             }
+
+            out.writeUTF(this.commands.error + " " + "Command not found\n");
         }
+    }
+
+    protected boolean connectUser(User user, String password) throws IOException {
+        if (user == null) {
+            return false;
+        }
+
+        boolean passwordIsCorrect = this.checkUserPassword(password, user.password);
+
+        if (!passwordIsCorrect) {
+            return false;
+        }
+
+        // update localpath and homepath
+        File file = this.dirController.mkdir(this.home.toString(), user.user);
+        this.home = file.toPath();
+        this.userPath = this.home;
+
+        System.out.format("User %s connected ...\n", user.user);
+        out.writeUTF(this.commands.success + " " + this.home);
+        return true;
     }
 
     protected void listenCommands() throws IOException, EOFException, UnsupportedOperationException {
@@ -177,7 +183,7 @@ public class Listenner extends Thread {
             return !keepConnection;
         }
 
-        out.writeUTF("Command not found");
+        out.writeUTF("Command not found\n");
         return keepConnection;
     }
 
